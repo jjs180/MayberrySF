@@ -1,0 +1,23 @@
+trigger FSSLinkTrigger on FSSLink__c (after insert, after update, after delete) {
+    if (!TriggerSettings__c.getOrgDefaults().TriggersEnabled__c){
+        system.debug('### Triggers not active');
+        return;
+    }
+    system.debug('### FSSTrigger running');
+    Set<Id> rgIds = new Set<Id>();
+    
+    if(trigger.isInsert || trigger.isUpdate){
+        for(FSSLink__c fssJunction : trigger.new){
+            rgIds.add(fssJunction.Relationship_Group__c);
+        }
+    }
+    else if(trigger.isDelete){
+        for(FSSLink__c fssJunction : trigger.old){
+            rgIds.add(fssJunction.Relationship_Group__c);
+        }
+    }
+    
+    if (!rgIds.isEmpty()){
+        PortfolioBalanceClass.UpdateRGTotals(rgIds);
+    }
+}
