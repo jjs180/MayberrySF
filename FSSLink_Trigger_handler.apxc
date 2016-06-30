@@ -1,0 +1,29 @@
+public class FSSLink_Trigger_handler {
+
+    public static void preventFSSLink_duplicates(List<FSSLink__c> fssLinkList){
+        Map<Id,Id> rg_FSS_LookupIdMap = new Map<Id,Id>(); //Map of lookup Ids (RGid, FSSId)
+        
+        //Using Map as hash table concept, detect duplicates within trigger context
+        for(FSSLink__c fsslink: fssLinkList){
+            if( rg_FSS_LookupIdMap.get(fsslink.Relationship_Group__c) == fsslink.Financial_Services_Summary__c ){
+                //duplicate detected in trigger batch context
+                fsslink.addError('You cannot join the same financial services summary to a Relationship Group');
+            }
+            else{
+                rg_FSS_LookupIdMap.put(fsslink.Relationship_Group__c, fsslink.Financial_Services_Summary__c);
+            }
+        }
+        //Detect duplicates in rest of database
+        for(FSSLink__c fsslink: [SELECT Id, Relationship_Group__c, Financial_Services_Summary__c
+                                FROM FSSLink__c WHERE Relationship_Group__c IN :rg_FSS_LookupIdMap.keySet()
+                                AND Financial_Services_Summary__c IN :rg_FSS_LookupIdMap.values()]){
+            for(FSSLink__c fsslink_in_trigger: fssLinkList){                        
+            	if( rg_FSS_LookupIdMap.get(fsslink_in_trigger.Relationship_Group__c) == fsslink_in_trigger.Financial_Services_Summary__c ){
+                	fsslink_in_trigger.addError('You cannot join the same financial services summary to a Relationship Group');
+            	}
+            }
+        }
+    }
+    
+    
+}

@@ -1,0 +1,5 @@
+trigger FSSLink_Before_Trigger on FSSLink__c (before insert, before update) {
+
+    FSSLink_Trigger_handler.preventFSSLink_duplicates(trigger.new);
+    
+}

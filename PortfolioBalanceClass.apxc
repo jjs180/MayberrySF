@@ -20,19 +20,10 @@ public class PortfolioBalanceClass {
                                             where Id in: rgIds]){
             rgToUpdate.put(rg.Id, new households__Household__c(Id = rg.Id, Total_FSS_Value__c = 0));
         }
-        /* system.debug('### [' + [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Relationship_Group__c in: rgIds].size() + ']');
+       //system.debug('### [' + [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Relationship_Group__c in: rgIds].size() + ']');
        for (FSSLink__c fssJunction : [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Relationship_Group__c in: rgIds]){
             rgToUpdate.get(fssJunction.Relationship_Group__c).Total_FSS_Value__c += fssJunction.Portfolio_Balance__c;
         }
-        /*for (Financial_Services_Summary__c fss : [select Id, Portfolio_Balance__c, Relationship_Group__c 
-                                                  from Financial_Services_Summary__c 
-                                                  where Relationship_Group__c in: rgIds]){
-            if (fss.Portfolio_Balance__c <> 0){
-                //rgToUpdate.get(fss.Relationship_Group__c).Total_FSS_Value__c += fss.Portfolio_Balance__c;
-                
-            }
-        }*/
-        
         
         if (!rgToUpdate.isEmpty()){
             List<Database.SaveResult> results = database.update(rgToUpdate.values(), false);
@@ -66,8 +57,8 @@ public class PortfolioBalanceClass {
             accountsToUpdate.put(a.Id, new Account(Id = a.Id, Total_FSS_Value__c = 0));
         }
         
-        for (households__HouseholdMember__c rgm : [select Id, FORMULA_FSS_Value__c, households__Account__c from households__HouseholdMember__c where households__Account__c in: accountIds]){
-            if (rgm.FORMULA_FSS_Value__c <> 0){
+        for (households__HouseholdMember__c rgm : [SELECT Id, FORMULA_FSS_Value__c, households__Account__c,households__IncludeInRollup__c FROM households__HouseholdMember__c WHERE households__Account__c in: accountIds]){
+            if ( rgm.FORMULA_FSS_Value__c <> 0 && rgm.households__IncludeInRollup__c ){
                 accountsToUpdate.get(rgm.households__Account__c).Total_FSS_Value__c += rgm.FORMULA_FSS_Value__c;
             }
         }
