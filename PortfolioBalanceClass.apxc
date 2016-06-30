@@ -1,0 +1,87 @@
+public class PortfolioBalanceClass {
+    @future
+    public static void futureUpdateRGTotals(Set<Id> rgIds){
+        updateRGTotals(rgIds);     
+    }
+    
+    public static void batchUpdateRGTotals(List<households__Household__c> rgList){
+        Set<Id> rgIds = new Set<Id>();
+        for (households__Household__c rg : rgList){
+            rgIds.add(rg.Id);
+        }
+        updateRGTotals(rgIds);
+    }
+    
+    public static void updateRGTotals(Set<Id> rgIds){
+        Map<Id, households__Household__c> rgToUpdate = new Map<Id, households__Household__c>();
+        
+        for (households__Household__c rg : [select Id, Total_FSS_Value__c 
+                                            from households__Household__c 
+                                            where Id in: rgIds]){
+            rgToUpdate.put(rg.Id, new households__Household__c(Id = rg.Id, Total_FSS_Value__c = 0));
+        }
+        /* system.debug('### [' + [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Relationship_Group__c in: rgIds].size() + ']');
+       for (FSSLink__c fssJunction : [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Relationship_Group__c in: rgIds]){
+            rgToUpdate.get(fssJunction.Relationship_Group__c).Total_FSS_Value__c += fssJunction.Portfolio_Balance__c;
+        }
+        /*for (Financial_Services_Summary__c fss : [select Id, Portfolio_Balance__c, Relationship_Group__c 
+                                                  from Financial_Services_Summary__c 
+                                                  where Relationship_Group__c in: rgIds]){
+            if (fss.Portfolio_Balance__c <> 0){
+                //rgToUpdate.get(fss.Relationship_Group__c).Total_FSS_Value__c += fss.Portfolio_Balance__c;
+                
+            }
+        }*/
+        
+        
+        if (!rgToUpdate.isEmpty()){
+            List<Database.SaveResult> results = database.update(rgToUpdate.values(), false);
+            for (Database.SaveResult result : results) {
+                if (!result.isSuccess()){
+                    for (Database.Error err : result.getErrors()){
+                        System.debug('### futureUpdateRGTotals Error: '+ err.getStatusCode() + ' ' + err.getMessage());
+                    }
+                }
+            }
+        }
+    }
+    
+    @future
+    public static void futureUpdateAccountTotals(Set<Id> accountIds){
+        updateAccountTotals(accountIds);     
+    }
+    
+    public static void batchUpdateAccountTotals(List<Account> accounts){
+        Set<Id> accountIds = new Set<Id>();
+        for (Account a : accounts){
+            accountIds.add(a.Id);
+        }
+        updateAccountTotals(accountIds);
+    }
+    
+    public static void updateAccountTotals(Set<Id> accountIds){
+        Map<Id, Account> accountsToUpdate = new Map<Id, Account>();
+        
+        for(Account a : [select Id, Total_FSS_Value__c from Account where Id in:accountIds]){
+            accountsToUpdate.put(a.Id, new Account(Id = a.Id, Total_FSS_Value__c = 0));
+        }
+        
+        for (households__HouseholdMember__c rgm : [select Id, FORMULA_FSS_Value__c, households__Account__c from households__HouseholdMember__c where households__Account__c in: accountIds]){
+            if (rgm.FORMULA_FSS_Value__c <> 0){
+                accountsToUpdate.get(rgm.households__Account__c).Total_FSS_Value__c += rgm.FORMULA_FSS_Value__c;
+            }
+        }
+        
+        if (!accountsToUpdate.isEmpty()){
+            List<Database.SaveResult> results = database.update(accountsToUpdate.values(), false);
+            for (Database.SaveResult result : results) {
+                if (!result.isSuccess()){
+                    for (Database.Error err : result.getErrors()){
+                        System.debug('### updateAccountTotals Error: '+ err.getStatusCode() + ' ' + err.getMessage());
+                    }
+                }
+            }
+        }
+        
+    }
+}

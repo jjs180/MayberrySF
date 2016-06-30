@@ -1,0 +1,33 @@
+trigger FSSTrigger on Financial_Services_Summary__c (after insert, after update, after delete) {
+    if (TriggerSettings__c.getOrgDefaults().TriggersEnabled__c){
+        system.debug('### FSSTrigger running');
+        Set<Id> rgIds = new Set<Id>();
+        
+        if(trigger.isInsert || trigger.isUpdate){
+            /*
+            for(Financial_Services_Summary__c fss : trigger.new){
+                rgIds.add(fss.Relationship_Group__c);
+            }
+			*/
+            for(FSSLink__c fssJunction : [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Financial_Services_Summary__c in: trigger.newMap.values()]){
+                rgIds.add(fssJunction.Relationship_Group__c);
+            }
+        }
+        else if(trigger.isDelete){
+            /*for(Financial_Services_Summary__c fss : trigger.old){
+                rgIds.add(fss.Relationship_Group__c);
+            }*/
+            
+            for(FSSLink__c fssJunction : [select Id, Portfolio_Balance__c, Relationship_Group__c, Financial_Services_Summary__c from FSSLink__c where Financial_Services_Summary__c in: trigger.oldMap.values()]){
+                rgIds.add(fssJunction.Relationship_Group__c);
+            }
+        }
+        
+        if (!rgIds.isEmpty()){
+            PortfolioBalanceClass.UpdateRGTotals(rgIds);
+        }
+    }
+    else{
+        system.debug('### Triggers not active');
+    }
+}
